@@ -75,6 +75,7 @@ import org.eclipse.ui.views.markers.internal.MarkerSupportRegistry;
   name = "problems",
   options =
     "REQUIRED p project ARG," +
+    "OPTIONAL f file ARG," +
     "OPTIONAL e errors NOARG"
 )
 public class ProblemsCommand
@@ -90,6 +91,7 @@ public class ProblemsCommand
     waitOnBuild();
 
     String name = commandLine.getValue(Options.PROJECT_OPTION);
+    String filename = commandLine.getValue(Options.FILE_OPTION);
     boolean errorsOnly = commandLine.hasOption(Options.ERRORS_OPTION);
     IProject project = ProjectUtils.getProject(name);
 
@@ -163,6 +165,11 @@ public class ProblemsCommand
 
         String message = (String)attributes.get("message");
         String path = resource.getLocation().toOSString().replace('\\', '/');
+        if (!(filename == null ||
+              filename.isEmpty() ||
+              path.contains(filename))) {
+            continue;
+        }
         File file = new File(path);
         if (file.isFile() && file.exists() && offset > 0){
           pos = FileUtils.offsetToLineColumn(path, offset);
@@ -173,6 +180,7 @@ public class ProblemsCommand
               Math.max(pos[0], line),
               pos[1],
               severity != IMarker.SEVERITY_ERROR));
+
       }catch(ResourceException ignore){
         // race condition, i think, where we are attempting to obtain a
         // marker that has been removed since obtaining our list.
